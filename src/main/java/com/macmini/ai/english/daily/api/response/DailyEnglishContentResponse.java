@@ -3,7 +3,9 @@ package com.macmini.ai.english.daily.api.response;
 import com.macmini.ai.english.daily.model.DailyContentType;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
+@ToString
 @Getter
 @Builder
 public class DailyEnglishContentResponse {
