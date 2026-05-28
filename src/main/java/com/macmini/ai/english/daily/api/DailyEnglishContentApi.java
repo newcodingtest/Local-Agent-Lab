@@ -17,6 +17,7 @@ public class DailyEnglishContentApi {
 
     @PostMapping("/generate")
     public DailyEnglishContentResponse generate(@RequestBody DailyEnglishContentRequest request) {
+        log.info("request: {}", request);
         DailyEnglishContentResponse response = dailyEnglishContentService.generate(request);
         log.info("response: {}", response);
         return dailyEnglishContentService.generate(request);
