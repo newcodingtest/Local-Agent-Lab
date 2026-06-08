@@ -8,8 +8,10 @@ import com.macmini.ai.english.daily.api.request.DailyEnglishContentRequest;
 import com.macmini.ai.english.daily.api.response.DailyEnglishContentResponse;
 import com.macmini.ai.english.daily.prompt.DailyEnglishPromptBuilder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DailyEnglishContentPipelineService {
@@ -28,6 +30,8 @@ public class DailyEnglishContentPipelineService {
                         .build()
         );
 
+        log.info("draft: {}", draft);
+
         LlmResponse review = ollamaChatService.chat(
                 LlmRequest.builder()
                         .taskType(LlmTaskType.ENGLISH_REVIEW)
@@ -35,12 +39,16 @@ public class DailyEnglishContentPipelineService {
                         .build()
         );
 
+        log.info("review: {}", review);
+
         LlmResponse validatedJson = ollamaChatService.chat(
                 LlmRequest.builder()
                         .taskType(LlmTaskType.JSON_VALIDATE)
                         .prompt(promptBuilder.buildJsonValidationPrompt(draft.getContent()))
                         .build()
         );
+
+        log.info("validatedJson: {}", validatedJson);
 
         LlmResponse finalContent = ollamaChatService.chat(
                 LlmRequest.builder()
@@ -51,6 +59,8 @@ public class DailyEnglishContentPipelineService {
                         ))
                         .build()
         );
+
+        log.info("finalContent: {}", finalContent);
 
         return DailyEnglishContentResponse.builder()
                 .contentType(request.getContentType())
