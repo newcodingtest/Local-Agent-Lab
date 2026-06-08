@@ -41,20 +41,20 @@ public class DailyEnglishContentPipelineService {
 
         log.info("review: {}", review);
 
-        LlmResponse validatedJson = ollamaChatService.chat(
-                LlmRequest.builder()
-                        .taskType(LlmTaskType.JSON_VALIDATE)
-                        .prompt(promptBuilder.buildJsonValidationPrompt(draft.getContent()))
-                        .build()
-        );
+//        LlmResponse validatedJson = ollamaChatService.chat(
+//                LlmRequest.builder()
+//                        .taskType(LlmTaskType.JSON_VALIDATE)
+//                        .prompt(promptBuilder.buildJsonValidationPrompt(draft.getContent()))
+//                        .build()
+//        );
 
-        log.info("validatedJson: {}", validatedJson);
+//        log.info("validatedJson: {}", validatedJson);
 
         LlmResponse finalContent = ollamaChatService.chat(
                 LlmRequest.builder()
                         .taskType(LlmTaskType.FINAL_REWRITE)
                         .prompt(promptBuilder.buildFinalRewritePrompt(
-                                validatedJson.getContent(),
+                                review.getContent(),
                                 review.getContent()
                         ))
                         .build()
@@ -66,7 +66,6 @@ public class DailyEnglishContentPipelineService {
                 .contentType(request.getContentType())
                 .draft(draft.getContent())
                 .review(review.getContent())
-                .validatedJson(validatedJson.getContent())
                 .finalContent(finalContent.getContent())
                 .build();
     }
