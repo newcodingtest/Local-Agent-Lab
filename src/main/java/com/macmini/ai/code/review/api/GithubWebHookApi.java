@@ -25,23 +25,32 @@ public class GithubWebHookApi {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody String payload
     ) throws Exception {
-        //test
+        log.info("GitHub Event: {}", event);
         log.info("payload: {}", payload);
+
         signatureVerifier.verify(payload, signature);
 
+        if ("ping".equals(event)) {
+            log.info("GitHub webhook ping received");
+            return ResponseEntity.ok("pong");
+        }
+
         if (!"pull_request".equals(event)) {
-            log.info("ignored");
-            return ResponseEntity.ok("pull ignored");
+            log.info("ignored event: {}", event);
+            return ResponseEntity.ok("ignored event: " + event);
         }
 
         JsonNode root = objectMapper.readTree(payload);
         String action = root.path("action").asText();
 
-        if (!action.equals("opened") && !action.equals("synchronize") && !action.equals("reopened")) {
-            log.info("ignored");
-            return ResponseEntity.ok("open ignored");
+        log.info("Pull request action: {}", action);
+
+        if (!action.equals("opened")
+                && !action.equals("synchronize")
+                && !action.equals("reopened")) {
+            return ResponseEntity.ok("ignored action: " + action);
         }
-        //test
+
         pullRequestReviewService.review(root);
 
         return ResponseEntity.ok("reviewed");
