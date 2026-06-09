@@ -39,6 +39,9 @@ public class PullRequestReviewService {
         log.info("diffText: {}", diffText);
         String review = aiReviewService.review(fullName, pullNumber, diffText);
 
+        log.info("AI review result length: {}", review == null ? 0 : review.length());
+        log.info("AI review result: {}", review);
+
         githubClient.createIssueComment(owner, repo, pullNumber, review);
     }
 
