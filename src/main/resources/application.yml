@@ -9,3 +9,7 @@ spring:
         options:
           model: qwen3.5:9b
           temperature: 0.3
+
+github:
+  token: ${GITHUB_TOKEN}
+  webhook-secret: ${GITHUB_WEBHOOK_SECRET}
