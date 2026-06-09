@@ -3,10 +3,12 @@ package com.macmini.ai.code.review.service;
 import com.macmini.ai.common.llm.model.LlmModelProfile;
 import com.macmini.ai.common.llm.model.LlmTaskType;
 import com.macmini.ai.common.llm.service.LlmModelRouter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 
+@Slf4j
 @Service
 public class AiReviewService {
 
@@ -33,6 +35,8 @@ public class AiReviewService {
                 diffText
         );
 
+        log.info("codeReview: {}", codeReview);
+
         String architectureReview = reviewByTask(
                 LlmTaskType.ARCHITECTURE_REVIEW,
                 repository,
@@ -40,6 +44,7 @@ public class AiReviewService {
                 diffText
         );
 
+        log.info("architectureReview: {}", architectureReview);
         return """
                 ## AI Code Review
 
