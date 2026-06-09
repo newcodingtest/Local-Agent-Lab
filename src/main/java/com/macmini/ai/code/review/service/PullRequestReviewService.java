@@ -35,7 +35,7 @@ public class PullRequestReviewService {
             githubClient.createIssueComment(owner, repo, pullNumber, "AI 리뷰 대상 diff가 없습니다.");
             return;
         }
-
+        //test
         log.info("diffText: {}", diffText);
         String review = aiReviewService.review(fullName, pullNumber, diffText);
 
