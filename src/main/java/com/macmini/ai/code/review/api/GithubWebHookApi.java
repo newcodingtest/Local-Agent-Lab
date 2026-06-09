@@ -41,7 +41,7 @@ public class GithubWebHookApi {
             log.info("ignored");
             return ResponseEntity.ok("open ignored");
         }
-
+        //test
         pullRequestReviewService.review(root);
 
         return ResponseEntity.ok("reviewed");
