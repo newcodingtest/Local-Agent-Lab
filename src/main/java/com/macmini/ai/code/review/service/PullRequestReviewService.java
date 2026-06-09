@@ -25,7 +25,7 @@ public class PullRequestReviewService {
 
         log.info("Review target. owner={}, repo={}, fullName={}, pullNumber={}",
                 owner, repo, fullName, pullNumber);
-
+        //test
         JsonNode files = githubClient.getPullRequestFiles(owner, repo, pullNumber);
 
         String diffText = buildDiffText(files);
