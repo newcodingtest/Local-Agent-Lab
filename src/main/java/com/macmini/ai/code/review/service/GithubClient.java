@@ -29,7 +29,11 @@ public class GithubClient {
                 .body(JsonNode.class);
     }
     //test
-    public void createIssueComment(final String owner, final String repo, final int issueNumber, final String body){
+    public void createIssueComment(final String owner, final String repo, final int issueNumber, String body){
+        if (body == null || body.isBlank() || body.isEmpty()) {
+            body = "AI 리뷰 결과가 비어 있습니다.";
+        }
+
         client().post()
                 .uri("/repos/{owner}/{repo}/issues/{pullNumber}/comments", owner, repo, issueNumber)
                 .body(new CommentRequest(body))
