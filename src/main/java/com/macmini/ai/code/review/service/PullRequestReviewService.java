@@ -2,8 +2,10 @@ package com.macmini.ai.code.review.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PullRequestReviewService {
@@ -24,12 +26,13 @@ public class PullRequestReviewService {
         String diffText = buildDiffText(files);
 
         if (diffText.isBlank()) {
+            log.info("AI 리뷰 대상 diff가 없습니다.");
             githubClient.createIssueComment(owner, repo, pullNumber, "AI 리뷰 대상 diff가 없습니다.");
             return;
         }
 
         String review = aiReviewService.review(fullName, pullNumber, diffText);
-
+        log.info("review: {}", review);
         githubClient.createIssueComment(owner, repo, pullNumber, review);
     }
 

@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.macmini.ai.code.review.service.GithubSignatureVerifier;
 import com.macmini.ai.code.review.service.PullRequestReviewService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/webhooks/github")
@@ -23,18 +25,21 @@ public class GithubWebHookApi {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody String payload
     ) throws Exception {
-
+        //test
+        log.info("payload: {}", payload);
         signatureVerifier.verify(payload, signature);
 
         if (!"pull_request".equals(event)) {
-            return ResponseEntity.ok("ignored");
+            log.info("ignored");
+            return ResponseEntity.ok("pull ignored");
         }
 
         JsonNode root = objectMapper.readTree(payload);
         String action = root.path("action").asText();
 
         if (!action.equals("opened") && !action.equals("synchronize") && !action.equals("reopened")) {
-            return ResponseEntity.ok("ignored");
+            log.info("ignored");
+            return ResponseEntity.ok("open ignored");
         }
 
         pullRequestReviewService.review(root);
