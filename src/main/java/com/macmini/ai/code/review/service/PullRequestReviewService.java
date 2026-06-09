@@ -19,7 +19,12 @@ public class PullRequestReviewService {
         String owner = payload.path("repository").path("owner").path("login").asText();
         String repo = payload.path("repository").path("name").asText();
         String fullName = payload.path("repository").path("full_name").asText();
-        int pullNumber = payload.path("pull_request").path("number").asInt();
+
+        // 중요: PR 번호는 top-level number 사용
+        int pullNumber = payload.path("number").asInt();
+
+        log.info("Review target. owner={}, repo={}, fullName={}, pullNumber={}",
+                owner, repo, fullName, pullNumber);
 
         JsonNode files = githubClient.getPullRequestFiles(owner, repo, pullNumber);
 
@@ -32,7 +37,7 @@ public class PullRequestReviewService {
         }
 
         String review = aiReviewService.review(fullName, pullNumber, diffText);
-        log.info("review: {}", review);
+
         githubClient.createIssueComment(owner, repo, pullNumber, review);
     }
 

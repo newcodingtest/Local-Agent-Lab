@@ -39,7 +39,7 @@ public class GithubWebHookApi {
             log.info("ignored event: {}", event);
             return ResponseEntity.ok("ignored event: " + event);
         }
-        //test
+
         JsonNode root = objectMapper.readTree(payload);
         String action = root.path("action").asText();
 
