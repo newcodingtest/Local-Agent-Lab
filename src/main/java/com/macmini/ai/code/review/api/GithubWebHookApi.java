@@ -23,7 +23,7 @@ public class GithubWebHookApi {
             @RequestHeader(value = "X-Hub-Signature-256", required = false) String signature,
             @RequestBody String payload
     ) throws Exception {
-
+        //test
         signatureVerifier.verify(payload, signature);
 
         if (!"pull_request".equals(event)) {
