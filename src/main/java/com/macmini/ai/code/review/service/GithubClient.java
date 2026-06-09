@@ -24,14 +24,14 @@ public class GithubClient {
 
     public JsonNode getPullRequestFiles(final String owner, final String repo, final int pullNumber){
         return client().get()
-                .uri("/repo/{owner}/{repo}/pulls/{pullNumber}/files", owner, repo, pullNumber)
+                .uri("/repos/{owner}/{repo}/pulls/{pullNumber}/files", owner, repo, pullNumber)
                 .retrieve()
                 .body(JsonNode.class);
     }
 
     public void createIssueComment(final String owner, final String repo, final int issueNumber, final String body){
         client().post()
-                .uri("/repo/{owner}/{repo}/issues/{pullNumber}/comments", owner, repo, issueNumber)
+                .uri("/repos/{owner}/{repo}/issues/{pullNumber}/comments", owner, repo, issueNumber)
                 .body(new CommentRequest(body))
                 .retrieve()
                 .toBodilessEntity();
