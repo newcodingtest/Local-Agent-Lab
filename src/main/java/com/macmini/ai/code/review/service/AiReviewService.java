@@ -1,42 +1,73 @@
 package com.macmini.ai.code.review.service;
 
-import lombok.RequiredArgsConstructor;
+import com.macmini.ai.common.llm.model.LlmModelProfile;
+import com.macmini.ai.common.llm.model.LlmTaskType;
+import com.macmini.ai.common.llm.service.LlmModelRouter;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 
-@RequiredArgsConstructor
 @Service
 public class AiReviewService {
 
     private final ChatClient chatClient;
+    private final LlmModelRouter llmModelRouter;
 
-    public String review(String repository, int pullNumber, String diffText){
+    public AiReviewService(
+            final ChatClient.Builder chatClientBuilder,
+            final LlmModelRouter llmModelRouter
+    ) {
+        this.chatClient = chatClientBuilder.build();
+        this.llmModelRouter = llmModelRouter;
+    }
+
+    public String review(
+            final String repository,
+            final int pullNumber,
+            final String diffText
+    ) {
+        String codeReview = reviewByTask(
+                LlmTaskType.CODE_REVIEW,
+                repository,
+                pullNumber,
+                diffText
+        );
+
+        String architectureReview = reviewByTask(
+                LlmTaskType.ARCHITECTURE_REVIEW,
+                repository,
+                pullNumber,
+                diffText
+        );
+
+        return """
+                ## AI Code Review
+
+                %s
+
+                ---
+
+                ## Architecture Review
+
+                %s
+                """.formatted(codeReview, architectureReview);
+    }
+
+    private String reviewByTask(
+            final LlmTaskType taskType,
+            final String repository,
+            final int pullNumber,
+            final String diffText
+    ) {
+        LlmModelProfile profile = llmModelRouter.route(taskType);
+
         return chatClient.prompt()
-                .system("""
-                        너는 시니어 백엔드 코드 리뷰어이자 아키텍처 리뷰어다.
-
-                        리뷰 기준:
-                        1. 버그 가능성
-                        2. 예외 처리
-                        3. 동시성/트랜잭션 문제
-                        4. 성능 문제
-                        5. 책임 분리와 SOLID
-                        6. 테스트 필요 케이스
-                        7. 아키텍처 개선점
-
-                        응답 형식:
-                        ## AI Code Review
-                        - 문제:
-                        - 근거:
-                        - 개선 제안:
-
-                        ## Architecture Review
-                        - 현재 구조 판단:
-                        - 위험 지점:
-                        - 리팩토링 제안:
-
-                        과장하지 말고, diff에서 확인 가능한 내용 위주로 리뷰해라.
-                        """)
+                .options(OllamaChatOptions.builder()
+                        .model(profile.getModel())
+                        .temperature(profile.getTemperature())
+                        .numPredict(profile.getNumPredict())
+                        .build())
+                .system(profile.getSystemPrompt())
                 .user("""
                         Repository: %s
                         Pull Request: #%d

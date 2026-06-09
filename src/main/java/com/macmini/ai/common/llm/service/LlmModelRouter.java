@@ -61,6 +61,47 @@ public class LlmModelRouter {
 								""")
                         .build();
 
+            case CODE_REVIEW:
+                return LlmModelProfile.builder()
+                        .model("qwen3.5:9b")
+                        .temperature(0.2)
+                        .numPredict(4096)
+                        .systemPrompt("""
+                    너는 시니어 백엔드 코드 리뷰어다.
+                    diff에서 확인 가능한 내용만 기준으로 리뷰하라.
+
+                    리뷰 기준:
+                    1. 버그 가능성
+                    2. 예외 처리
+                    3. 동시성/트랜잭션 문제
+                    4. 성능 문제
+                    5. 테스트 필요 케이스
+
+                    과장하지 말고, 근거 기반으로 작성하라.
+                    """)
+                        .build();
+
+            case ARCHITECTURE_REVIEW:
+                return LlmModelProfile.builder()
+                        .model("qwen3:30b")
+                        .temperature(0.2)
+                        .numPredict(4096)
+                        .systemPrompt("""
+                    너는 시니어 백엔드 아키텍처 리뷰어다.
+                    PR diff를 기반으로 구조적 문제와 설계 개선점을 검토하라.
+
+                    리뷰 기준:
+                    1. 책임 분리
+                    2. SOLID
+                    3. 도메인 경계
+                    4. 의존성 방향
+                    5. 확장성
+                    6. 운영 안정성
+
+                    diff에서 추론 가능한 범위 안에서만 리뷰하라.
+                    """)
+                        .build();
+
             default:
                 throw new IllegalArgumentException("Unsupported taskType: " + taskType);
         }
