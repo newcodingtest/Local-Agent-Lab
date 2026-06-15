@@ -1,12 +1,16 @@
 package com.macmini.ai.code.review.service;
 
+import com.macmini.ai.code.review.model.GithubPullRequestFile;
+import com.macmini.ai.code.review.model.ReviewContext;
 import com.macmini.ai.common.llm.model.LlmModelProfile;
 import com.macmini.ai.common.llm.model.LlmTaskType;
 import com.macmini.ai.common.llm.service.LlmModelRouter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.stereotype.Service;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Slf4j
 @Service
@@ -14,57 +18,72 @@ public class AiReviewService {
 
     private final ChatClient chatClient;
     private final LlmModelRouter llmModelRouter;
+    private final ReviewContextBuilder reviewContextBuilder;
+    private final ReviewPromptFactory reviewPromptFactory;
 
     public AiReviewService(
             final ChatClient.Builder chatClientBuilder,
-            final LlmModelRouter llmModelRouter
+            final LlmModelRouter llmModelRouter,
+            final ReviewContextBuilder reviewContextBuilder,
+            final ReviewPromptFactory reviewPromptFactory
     ) {
         this.chatClient = chatClientBuilder.build();
         this.llmModelRouter = llmModelRouter;
+        this.reviewContextBuilder = reviewContextBuilder;
+        this.reviewPromptFactory = reviewPromptFactory;
     }
 
     public String review(
+            final String owner,
+            final String repo,
             final String repository,
             final int pullNumber,
-            final String diffText
+            final String baseBranch,
+            final String headRef,
+            final String diffText,
+            final List<GithubPullRequestFile> pullRequestFiles
     ) {
-        String codeReview = reviewByTask(
+        ReviewContext context = reviewContextBuilder.build(
+                owner,
+                repo,
+                repository,
+                pullNumber,
+                baseBranch,
+                headRef,
+                diffText,
+                pullRequestFiles
+        );
+
+        String cleanCodeReview = reviewByTask(
                 LlmTaskType.CODE_REVIEW,
-                repository,
-                pullNumber,
-                diffText
+                context
         );
 
-        log.info("codeReview: {}", codeReview);
-
-        String architectureReview = reviewByTask(
+        String cleanArchitectureReview = reviewByTask(
                 LlmTaskType.ARCHITECTURE_REVIEW,
-                repository,
-                pullNumber,
-                diffText
+                context
         );
 
-        log.info("architectureReview: {}", architectureReview);
         return """
-                ## AI Code Review
+                ## AI Clean Code Review
 
                 %s
 
                 ---
 
-                ## Architecture Review
+                ## AI Clean Architecture Review
 
                 %s
-                """.formatted(codeReview, architectureReview);
+                """.formatted(cleanCodeReview, cleanArchitectureReview);
     }
 
     private String reviewByTask(
             final LlmTaskType taskType,
-            final String repository,
-            final int pullNumber,
-            final String diffText
+            final ReviewContext context
     ) {
         LlmModelProfile profile = llmModelRouter.route(taskType);
+
+        String userPrompt = reviewPromptFactory.createUserPrompt(context);
 
         return chatClient.prompt()
                 .options(OllamaChatOptions.builder()
@@ -73,14 +92,7 @@ public class AiReviewService {
                         .numPredict(profile.getNumPredict())
                         .build())
                 .system(profile.getSystemPrompt())
-                .user("""
-                        Repository: %s
-                        Pull Request: #%d
-
-                        아래 PR diff를 리뷰해줘.
-
-                        %s
-                        """.formatted(repository, pullNumber, diffText))
+                .user(userPrompt)
                 .call()
                 .content();
     }
