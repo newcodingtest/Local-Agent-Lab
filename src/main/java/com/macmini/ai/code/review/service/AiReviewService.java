@@ -54,27 +54,10 @@ public class AiReviewService {
                 pullRequestFiles
         );
 
-        String cleanCodeReview = reviewByTask(
+        return reviewByTask(
                 LlmTaskType.CODE_REVIEW,
                 context
         );
-
-        String cleanArchitectureReview = reviewByTask(
-                LlmTaskType.ARCHITECTURE_REVIEW,
-                context
-        );
-
-        return """
-                ## AI Clean Code Review
-
-                %s
-
-                ---
-
-                ## AI Clean Architecture Review
-
-                %s
-                """.formatted(cleanCodeReview, cleanArchitectureReview);
     }
 
     private String reviewByTask(

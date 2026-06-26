@@ -12,7 +12,8 @@ public class ReviewContextBuilder {
 
     private final GithubClient githubClient;
     private final RelatedFileResolver relatedFileResolver;
-    private final ReviewKnowledgeRetriever reviewKnowledgeRetriever;
+    private final ReviewDocumentCollector reviewDocumentCollector;
+    private final ContextSelectionService contextSelectionService;
 
     public ReviewContext build(
             final String owner,
@@ -26,6 +27,7 @@ public class ReviewContextBuilder {
     ) {
         List<ChangedFileContext> changedFiles = pullRequestFiles.stream()
                 .filter(this::isReviewableSourceFile)
+                .filter(file -> !"removed".equals(file.status()))
                 .map(file -> toChangedFileContext(owner, repo, headRef, file))
                 .filter(Objects::nonNull)
                 .toList();
@@ -33,19 +35,22 @@ public class ReviewContextBuilder {
         List<RelatedFileContext> relatedFiles = relatedFileResolver.resolve(
                 owner,
                 repo,
-                baseBranch,
+                headRef,
                 changedFiles
         );
 
         List<TestFileContext> testFiles = relatedFileResolver.resolveTests(
                 owner,
                 repo,
-                baseBranch,
+                headRef,
                 changedFiles
         );
 
-        List<RetrievedReviewKnowledge> knowledgeList =
-                reviewKnowledgeRetriever.retrieve(diffText, changedFiles);
+        List<ReviewDocumentContext> collectedDocuments =
+                reviewDocumentCollector.collect(owner, repo, headRef);
+
+        List<ReviewDocumentContext> selectedDocuments =
+                contextSelectionService.select(collectedDocuments, changedFiles, diffText);
 
         return new ReviewContext(
                 owner,
@@ -53,11 +58,12 @@ public class ReviewContextBuilder {
                 repository,
                 pullNumber,
                 baseBranch,
+                headRef,
                 diffText,
                 changedFiles,
                 relatedFiles,
                 testFiles,
-                knowledgeList
+                selectedDocuments
         );
     }
 
@@ -85,6 +91,8 @@ public class ReviewContextBuilder {
                 || filename.endsWith(".yml")
                 || filename.endsWith(".yaml")
                 || filename.endsWith(".gradle")
+                || filename.endsWith(".kts")
+                || filename.endsWith(".xml")
                 || filename.endsWith(".md");
     }
 

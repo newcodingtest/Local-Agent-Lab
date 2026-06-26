@@ -8,10 +8,11 @@ public record ReviewContext(
         String repository,
         int pullNumber,
         String baseBranch,
+        String headRef,
         String diffText,
         List<ChangedFileContext> changedFiles,
         List<RelatedFileContext> relatedFiles,
         List<TestFileContext> testFiles,
-        List<RetrievedReviewKnowledge> knowledgeList
+        List<ReviewDocumentContext> reviewDocuments
 ) {
 }
