@@ -3,6 +3,7 @@ package com.macmini.ai.code.review.service;
 import com.macmini.ai.code.review.model.*;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -10,156 +11,180 @@ public class ReviewPromptFactory {
 
     public String createUserPrompt(final ReviewContext context) {
         return """
-                Repository: %s
-                Pull Request: #%d
-                Base Branch: %s
+                당신은 GitHub Pull Request를 리뷰하는 AI 코드 리뷰어입니다.
 
-                너는 Java/Spring 백엔드 프로젝트를 리뷰하는 시니어 코드리뷰어다.
-                이번 리뷰의 목적은 Clean Code와 Clean Architecture 관점의 구조적 피드백이다.
+                ## Review Rules
 
-                ## Review Scope
+                - 제공된 컨텍스트 안에서만 판단하세요.
+                - 존재하지 않는 파일, 클래스, 메서드, 정책을 만들어내지 마세요.
+                - 확실하지 않은 내용은 `확인 필요`로 표시하세요.
+                - 단순 취향성 리뷰는 피하세요.
+                - PR 변경사항과 직접 관련 있는 문제만 리뷰하세요.
+                - 문제를 지적할 때는 심각도, 근거, 수정 방향을 함께 제시하세요.
+                - 테스트를 실행하지 않았으므로 테스트 실행 결과를 단정하지 마세요.
+                - 빌드를 실행하지 않았으므로 컴파일 성공/실패를 단정하지 마세요.
 
-                - 리뷰 대상은 반드시 PR diff에서 변경된 코드다.
-                - 단, 판단 근거로 변경 파일 전체 내용, 관련 파일, 테스트 파일, 리뷰 규칙을 사용할 수 있다.
-                - 변경되지 않은 기존 코드 자체만의 문제는 주요 리뷰로 지적하지 말고, 필요한 경우 "참고"로만 작성한다.
-                - diff와 관련 없는 일반론은 작성하지 않는다.
-                - 사소한 포맷팅, 취향 수준의 스타일 지적은 제외한다.
+                ## Pull Request
 
-                ## Priority
+                - Repository: %s
+                - Pull Number: #%d
+                - Base Branch: %s
+                - Head Commit: %s
 
-                1. 책임 분리
-                2. 계층 간 의존성 방향
-                3. 추상화 수준 일관성
-                4. 메서드/클래스 크기와 역할
-                5. 중복 제거
-                6. 네이밍
-                7. 테스트 가능성
-                8. 예외/트랜잭션 경계
+                ## Project Review Documents
+
+                %s
+
+                ## Changed Files
+
+                %s
+
+                ## Pull Request Diff
+
+                %s
+
+                ## Changed File Contents
+
+                %s
+
+                ## Related Files
+
+                %s
+
+                ## Test Files
+
+                %s
 
                 ## Output Format
 
-                문제가 없으면 억지로 지적하지 말고 "주요 구조적 문제는 발견되지 않았습니다."라고 작성한다.
+                다음 Markdown 형식으로 답변하세요.
 
-                문제가 있다면 아래 형식으로 작성한다.
+                # AI Code Review
 
-                ### [Severity] 제목
+                ## Summary
+                변경사항 요약을 3줄 이내로 작성하세요.
 
-                - 위치:
-                - 문제:
-                - 근거:
-                - 개선 방향:
-                - 예시 코드:
+                ## Findings
 
-                Severity는 CRITICAL, HIGH, MEDIUM, LOW 중 하나를 사용한다.
+                문제가 있으면 아래 형식을 반복하세요.
 
-                ---
+                ### [SEVERITY] 제목
 
-                # Clean Code / Clean Architecture Review Rules
+                - File: `파일 경로`
+                - Location: 클래스/메서드/라인 정보. 알 수 없으면 `확인 필요`
+                - Reason: 문제 이유
+                - Suggestion: 수정 방향
 
-                %s
+                허용 severity:
+                - BLOCKER
+                - MAJOR
+                - MINOR
+                - SUGGESTION
 
-                ---
+                ## Check Needed
 
-                # PR Diff
+                컨텍스트 부족으로 단정할 수 없는 항목이 있으면 작성하세요.
 
-                %s
+                ## Good Points
 
-                ---
+                의미 있는 개선점이 있으면 짧게 작성하세요.
 
-                # Changed File Full Contents
+                문제가 명확히 없으면 억지로 만들지 말고 다음 문장을 포함하세요.
 
-                %s
-
-                ---
-
-                # Related Files
-
-                %s
-
-                ---
-
-                # Related Tests
-
-                %s
+                `제공된 컨텍스트 기준으로 명확한 문제는 발견하지 못했습니다.`
                 """.formatted(
                 context.repository(),
                 context.pullNumber(),
                 context.baseBranch(),
-                formatKnowledge(context),
+                context.headRef(),
+                formatReviewDocuments(context.reviewDocuments()),
+                formatChangedFileList(context.changedFiles()),
                 context.diffText(),
-                formatChangedFiles(context),
-                formatRelatedFiles(context),
-                formatTestFiles(context)
+                formatChangedFileContents(context.changedFiles()),
+                formatRelatedFiles(context.relatedFiles()),
+                formatTestFiles(context.testFiles())
         );
     }
 
-    private String formatKnowledge(final ReviewContext context) {
-        return context.knowledgeList().stream()
-                .map(this::formatKnowledge)
-                .collect(Collectors.joining("\n\n---\n\n"));
+    private String formatReviewDocuments(final java.util.List<ReviewDocumentContext> documents) {
+        if (documents == null || documents.isEmpty()) {
+            return "No project review documents were provided.";
+        }
+
+        return documents.stream()
+                .map(document -> """
+                        ### %s
+                        Path: `%s`
+
+                        ```md
+                        %s
+                        ```
+                        """.formatted(
+                        document.type(),
+                        document.path(),
+                        document.content()
+                ))
+                .collect(Collectors.joining("\n\n"));
     }
 
-    private String formatKnowledge(final RetrievedReviewKnowledge knowledge) {
-        return """
-                Source: %s
-                Title: %s
+    private String formatChangedFileList(final List<ChangedFileContext> files) {
+        if (files == null || files.isEmpty()) {
+            return "No changed file content was provided.";
+        }
 
-                %s
-                """.formatted(
-                knowledge.source(),
-                knowledge.title(),
-                knowledge.content()
-        );
+        return files.stream()
+                .map(file -> "- `%s` (%s)".formatted(file.path(), file.status()))
+                .collect(Collectors.joining("\n"));
     }
 
-    private String formatChangedFiles(final ReviewContext context) {
-        return context.changedFiles().stream()
+    private String formatChangedFileContents(final java.util.List<ChangedFileContext> files) {
+        if (files == null || files.isEmpty()) {
+            return "No changed file contents were provided.";
+        }
+
+        return files.stream()
                 .map(file -> """
-                        ## %s
-                        Status: %s
+                        ### File: %s
 
-                        ```java
+                        ```text
                         %s
                         ```
                         """.formatted(
                         file.path(),
-                        file.status(),
                         file.content()
                 ))
                 .collect(Collectors.joining("\n\n"));
     }
 
-    private String formatRelatedFiles(final ReviewContext context) {
-        if (context.relatedFiles().isEmpty()) {
-            return "No related files found.";
+    private String formatRelatedFiles(final java.util.List<RelatedFileContext> files) {
+        if (files == null || files.isEmpty()) {
+            return "No related files were provided.";
         }
 
-        return context.relatedFiles().stream()
+        return files.stream()
                 .map(file -> """
-                        ## %s
-                        Reason: %s
+                        ### Related File: %s
 
-                        ```java
+                        ```text
                         %s
                         ```
                         """.formatted(
                         file.path(),
-                        file.reason(),
                         file.content()
                 ))
                 .collect(Collectors.joining("\n\n"));
     }
 
-    private String formatTestFiles(final ReviewContext context) {
-        if (context.testFiles().isEmpty()) {
-            return "No related tests found.";
+    private String formatTestFiles(final java.util.List<TestFileContext> files) {
+        if (files == null || files.isEmpty()) {
+            return "No test files were provided.";
         }
 
-        return context.testFiles().stream()
+        return files.stream()
                 .map(file -> """
-                        ## %s
+                        ### Test File: %s
 
-                        ```java
+                        ```text
                         %s
                         ```
                         """.formatted(
