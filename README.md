@@ -5,10 +5,10 @@ Spring AI + Ollama 기반 개인 AI Agent Playground.
 로컬 LLM(Ollama)과 Spring AI를 이용해
 여러 도메인의 AI 에이전트를 실험하고 구축하는 프로젝트입니다.
 
-현재는 Daily English Content Agent를 구현 중이며,
-향후 Swagger/OpenAPI 분석, 코드 리뷰, Resume Assistant 등
-다양한 AI Agent를 추가할 예정입니다.
+현재는 Daily English Content Agent, Swagger/OpenAPI 분석 Agent, 코드 리뷰 Agent 를 구축해뒀습니다.
 
+[코드리뷰] <br>
+https://github.com/newcodingtest/ai-review-test-spring-api/pull/3
 ---
 
 # Features
